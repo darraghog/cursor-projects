@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.wav
+*.mp3
+*.m4a
+results.txt
