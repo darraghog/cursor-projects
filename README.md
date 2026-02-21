@@ -42,6 +42,8 @@ Demonstrates the full pipeline for **LambdaFunctionSummarize**: audio → Amazon
 
 **AWS profile:** Scripts use the **PowerUser** profile by default (`--profile PowerUser`). If a command fails with a permission error, use a profile with broader access (e.g. `--profile administrator`).
 
+**Multiple instances:** To target a different S3 bucket (e.g. another instance from [transcription-demo-infra](../transcription-demo-infra)), pass **`--bucket BUCKET_NAME`** or set **`TRANSCRIPTION_DEMO_BUCKET`**.
+
 ## Quick Start
 
 Install dependencies and run with **uv** (creates a venv and installs from `pyproject.toml` if needed):

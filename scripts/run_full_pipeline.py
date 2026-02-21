@@ -4,6 +4,7 @@ Full pipeline: upload audio to S3 → start Transcribe job (output to *-transcri
 → S3 triggers Lambda → Lambda writes results.txt. We wait and download results.txt.
 """
 import argparse
+import os
 import sys
 import time
 from datetime import datetime
@@ -11,7 +12,7 @@ from pathlib import Path
 
 import boto3
 
-BUCKET = "genai-training-bucket"
+DEFAULT_BUCKET = os.environ.get("TRANSCRIPTION_DEMO_BUCKET", "genai-training-bucket")
 AUDIO_PREFIX = "audio"
 TRANSCRIPT_PREFIX = "transcripts"
 RESULTS_KEY = "results.txt"
@@ -49,6 +50,11 @@ def main() -> None:
         default="PowerUser",
         help="AWS profile name (default: PowerUser). Use administrator if you hit permission errors.",
     )
+    parser.add_argument(
+        "--bucket",
+        default=DEFAULT_BUCKET,
+        help="S3 bucket name (default: TRANSCRIPTION_DEMO_BUCKET env or genai-training-bucket). Use for multi-instance.",
+    )
     args = parser.parse_args()
 
     audio_path = args.audio_path
@@ -67,22 +73,23 @@ def main() -> None:
     output_key = "%s/%s-transcript.json" % (TRANSCRIPT_PREFIX, job_name)
     s3_audio_key = "%s/%s%s" % (AUDIO_PREFIX, job_name, suffix)
 
+    bucket = args.bucket
     session = boto3.Session(profile_name=args.profile)
     s3 = session.client("s3", region_name=args.region)
     transcribe = session.client("transcribe", region_name=args.region)
 
-    print("Uploading audio to s3://%s/%s" % (BUCKET, s3_audio_key))
-    s3.upload_file(str(audio_path), BUCKET, s3_audio_key)
-    media_uri = "s3://%s/%s" % (BUCKET, s3_audio_key)
+    print("Uploading audio to s3://%s/%s" % (bucket, s3_audio_key))
+    s3.upload_file(str(audio_path), bucket, s3_audio_key)
+    media_uri = "s3://%s/%s" % (bucket, s3_audio_key)
 
-    print("Starting Transcribe job: %s (output: s3://%s/%s)" % (job_name, BUCKET, output_key))
+    print("Starting Transcribe job: %s (output: s3://%s/%s)" % (job_name, bucket, output_key))
     transcribe.start_transcription_job(
         TranscriptionJobName=job_name,
         LanguageCode="en-US",
         MediaFormat=suffix.lstrip(".") if suffix != ".wb-amr" else "amr",
         Media={"MediaFileUri": media_uri},
         Settings={"ShowSpeakerLabels": True, "MaxSpeakerLabels": 10},
-        OutputBucketName=BUCKET,
+        OutputBucketName=bucket,
         OutputKey=output_key,
     )
 
@@ -103,7 +110,7 @@ def main() -> None:
     start = time.time()
     while time.time() - start < args.wait_results_seconds:
         try:
-            resp = s3.get_object(Bucket=BUCKET, Key=RESULTS_KEY)
+            resp = s3.get_object(Bucket=bucket, Key=RESULTS_KEY)
             body = resp["Body"].read().decode("utf-8")
             elapsed = time.time() - start
             print("\n--- results.txt (after %.1f s) ---\n%s" % (elapsed, body))

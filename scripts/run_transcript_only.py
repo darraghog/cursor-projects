@@ -9,9 +9,10 @@ import sys
 import time
 from pathlib import Path
 
+import os
 import boto3
 
-BUCKET = "genai-training-bucket"
+DEFAULT_BUCKET = os.environ.get("TRANSCRIPTION_DEMO_BUCKET", "genai-training-bucket")
 RESULTS_KEY = "results.txt"
 REGION = "us-east-1"
 # Key must contain "-transcript.json" for the Lambda to process it
@@ -42,6 +43,11 @@ def main() -> None:
         default="PowerUser",
         help="AWS profile name (default: PowerUser). Use administrator if you hit permission errors.",
     )
+    parser.add_argument(
+        "--bucket",
+        default=DEFAULT_BUCKET,
+        help="S3 bucket name (default: TRANSCRIPTION_DEMO_BUCKET env or genai-training-bucket). Use for multi-instance.",
+    )
     args = parser.parse_args()
 
     transcript_path = args.transcript
@@ -49,6 +55,7 @@ def main() -> None:
         print("Error: transcript file not found:", transcript_path, file=sys.stderr)
         sys.exit(1)
 
+    bucket = args.bucket
     session = boto3.Session(profile_name=args.profile)
     s3 = session.client("s3", region_name=args.region)
 
@@ -59,15 +66,15 @@ def main() -> None:
         print("Error: transcript must have results.items (Transcribe-style JSON)", file=sys.stderr)
         sys.exit(1)
 
-    print("Uploading", transcript_path.name, "to s3://%s/%s" % (BUCKET, TRANSCRIPT_KEY))
-    s3.upload_file(str(transcript_path), BUCKET, TRANSCRIPT_KEY, ExtraArgs={"ContentType": "application/json"})
+    print("Uploading", transcript_path.name, "to s3://%s/%s" % (bucket, TRANSCRIPT_KEY))
+    s3.upload_file(str(transcript_path), bucket, TRANSCRIPT_KEY, ExtraArgs={"ContentType": "application/json"})
 
     # Lambda is triggered by S3; it reads the file and writes results.txt
     print("Waiting for Lambda to run and write results.txt (up to %s s)..." % args.wait_seconds)
     start = time.time()
     while time.time() - start < args.wait_seconds:
         try:
-            resp = s3.get_object(Bucket=BUCKET, Key=RESULTS_KEY)
+            resp = s3.get_object(Bucket=bucket, Key=RESULTS_KEY)
             body = resp["Body"].read().decode("utf-8")
             elapsed = time.time() - start
             print("\n--- results.txt (after %.1f s) ---\n%s" % (elapsed, body))
