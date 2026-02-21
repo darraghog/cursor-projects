@@ -1,0 +1,15 @@
+# Dependencies and build
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.cdk.staging/
+cdk.out/
+.lambda_bundle/
+*.wav
+*.mp3
+*.m4a
+deploy.zip
+results.txt
+.env
