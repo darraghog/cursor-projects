@@ -1,0 +1,14 @@
+---
+description: Use AWS profile PowerUser by default for CLI commands; switch only on permission errors
+alwaysApply: true
+---
+
+# AWS profile default
+
+- When running **AWS CLI** commands (`aws ...`), use the **PowerUser** profile by default:
+  - Prefer: `aws ... --profile PowerUser` or `AWS_PROFILE=PowerUser aws ...`
+  - In scripts or docs that run AWS commands, default to `--profile PowerUser` (or set `AWS_PROFILE=PowerUser`).
+- If a command fails with a **permission / access denied** error, then:
+  - Suggest or retry with a profile that has the required permissions (e.g. `administrator`), or
+  - Tell the user they may need to use a different profile or request permissions.
+- Do not change the default to another profile unless the user asks or a permission error justifies it.

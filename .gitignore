@@ -1,11 +1,15 @@
-# Python
-__pycache__/
-*.py[cod]
+# Dependencies and build
 .venv/
 venv/
-.env
+node_modules/
+__pycache__/
+*.py[cod]
+.cdk.staging/
+cdk.out/
+.lambda_bundle/
 *.wav
 *.mp3
 *.m4a
-results.txt
 deploy.zip
+results.txt
+.env

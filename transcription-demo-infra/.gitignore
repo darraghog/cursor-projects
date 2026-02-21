@@ -1,0 +1,11 @@
+# CDK
+cdk.out/
+.cdk.staging/
+*.pyc
+__pycache__/
+.lambda_bundle/
+
+# Env
+.venv/
+venv/
+.env
